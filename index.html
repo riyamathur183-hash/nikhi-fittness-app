@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101318">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Beast Tracker">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>BEAST Fitness Tracker</title>
+<style>
+:root{color-scheme:dark;--bg:#101318;--panel:#1b212a;--muted:#aab3c0;--green:#39d98a;--line:#303946}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f5f7fa;font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 15px env(safe-area-inset-bottom)}
+main{max-width:650px;margin:auto;padding:22px 0 42px}h1{font-size:23px;margin:0}h2{font-size:17px;margin:0 0 10px}.sub,.muted{color:var(--muted)}.sub{font-size:13px;margin-top:5px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}.card,.meal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}.metric{font-size:25px;font-weight:800;margin-top:4px}.muted{font-size:12px}
+.progress{height:9px;background:#303946;border-radius:99px;overflow:hidden;margin:9px 0}.bar{height:100%;background:var(--green);width:0;transition:width .2s}
+.meal{margin:12px 0}.mealhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.pill{font-size:12px;background:#293b32;color:#a5f3c9;border-radius:20px;padding:5px 9px;white-space:nowrap}
+.food{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px}.food input{width:19px;height:19px;accent-color:var(--green)}
+.macroline{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:4px 0 7px}
+.section{margin-top:14px}.controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.btn{border:0;border-radius:12px;padding:11px 14px;background:#2c3745;color:white;font-weight:700;font-size:14px}.primary{background:var(--green);color:#07150d}.btn:disabled{opacity:.4}
+input[type=number],textarea{width:100%;background:#202833;border:1px solid var(--line);color:white;border-radius:11px;padding:12px;font:inherit}textarea{min-height:70px}.waternum{font-size:20px;font-weight:800;min-width:54px;text-align:center}
+.history{width:100%;border-collapse:collapse;font-size:13px}.history td,.history th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+footer{font-size:12px;color:var(--muted);line-height:1.5;margin-top:18px}
+</style>
+</head>
+<body><main>
+<header><h1>💪 BEAST FITNESS TRACKER</h1><div class="sub">Your diet · macros · gym · 30-day progress</div></header>
+<section class="grid">
+ <div class="card"><div class="muted">Calories plan</div><div class="metric" id="calTotal">3,625</div><div class="muted">kcal estimated</div></div>
+ <div class="card"><div class="muted">Protein plan</div><div class="metric" id="proTotal">160g</div><div class="muted">estimated</div></div>
+ <div class="card"><div class="muted">Carbs plan</div><div class="metric" id="carbTotal">606g</div><div class="muted">estimated</div></div>
+ <div class="card"><div class="muted">Fiber plan</div><div class="metric" id="fiberTotal">52g</div><div class="muted">estimated</div></div>
+</section>
+<div class="muted">Today's meal checklist</div><div class="progress"><div class="bar" id="bar"></div></div><div class="muted" id="progressText">0% complete</div>
+<div id="meals"></div>
+<section class="section card">
+ <h2>💧 Water tracker</h2><div class="controls"><button class="btn" id="minus">−</button><div class="waternum" id="waterText">0 / 8</div><button class="btn primary" id="plus">+ Glass</button></div>
+ <div class="muted" style="margin-top:7px">Adjust the target based on thirst, heat and your activity.</div>
+</section>
+<section class="section card">
+ <h2>🏋️ Workout</h2><label class="food"><input type="checkbox" id="workout"> Today's gym workout completed</label>
+</section>
+<section class="section card">
+ <h2>⚖️ Body weight (kg)</h2><input type="number" id="weight" min="1" max="300" step=".1" placeholder="e.g. 60"><div class="muted" style="margin-top:6px">Enter your morning weight. Save it to your 30-day log.</div>
+ <button class="btn primary" id="saveWeight" style="margin-top:10px">Save today's weight</button>
+</section>
+<section class="section card">
+ <h2>📝 Daily notes</h2><textarea id="notes" placeholder="Workout, energy, digestion, etc."></textarea>
+ <button class="btn" id="saveNotes" style="margin-top:9px">Save notes</button>
+</section>
+<section class="section card">
+ <h2>📈 30-day weight log</h2><div class="muted" id="historySummary">No weight entries saved yet.</div><div style="overflow-x:auto;margin-top:8px"><table class="history"><thead><tr><th>Date</th><th>Weight</th></tr></thead><tbody id="history"></tbody></table></div>
+</section>
+<section class="section controls"><button class="btn" id="reset">Reset today's checklist</button></section>
+<footer>Nutrition figures are estimates, not lab measurements. Assumptions: rice 250g dry/raw; chana and moong 30g each dry; 4 medium boiled potatoes; oats 100g; milk 250ml; 3 medium bananas; chicken breast 250g raw; 4 medium rotis and one bowl homemade sabzi. Roti size, oil, milk type and sabzi recipe can change totals. Your entries are saved in this browser on this device.</footer>
+</main>
+<script>
+const meals=[
+ {title:"11:00 AM · Meal 1",kcal:213,p:14,c:37,f:9,foods:["Kala chana · 30g dry, boiled","Moong dal · 30g dry, boiled"]},
+ {title:"1:00 PM · Meal 2",kcal:1200,p:43,c:201,f:3,foods:["Rice · 250g raw/dry","Whole eggs · 4"]},
+ {title:"2:00 PM · Meal 3",kcal:420,p:10,c:92,f:8,foods:["Boiled potatoes · 3 medium","Dahi · 50g"]},
+ {title:"6:00 PM · Meal 4 (shake)",kcal:854,p:29,c:159,f:20,foods:["Oats · 100g","Milk · 250ml","Banana · 3 (shake)"]},
+ {title:"10:00 PM · Meal 5",kcal:380,p:60,c:16,f:6,foods:["Chicken breast · 250g raw","Mixed vegetables · 150g","Cucumber + tomato · 100g"]},
+ {title:"11:00 PM · Meal 6",kcal:558,p:15,c:101,f:14,foods:["Roti · 4 medium","Homemade sabzi · 1 bowl"]}
+];
+const plan=meals.reduce((a,m)=>({k:a.k+m.kcal,p:a.p+m.p,c:a.c+m.c,f:a.f+m.f}),{k:0,p:0,c:0,f:0});
+document.getElementById('calTotal').textContent=plan.k.toLocaleString('en-IN');
+document.getElementById('proTotal').textContent=plan.p+'g';
+document.getElementById('carbTotal').textContent=plan.c+'g';
+document.getElementById('fiberTotal').textContent=plan.f+'g';
+const storeKey='beast-fitness-v2', today=new Date().toLocaleDateString('en-CA');
+const blank=()=>({date:today,checked:{},water:0,workout:false,weight:'',notes:''});
+let all={};try{all=JSON.parse(localStorage.getItem(storeKey))||{days:{},weights:[]}}catch(e){all={days:{},weights:[]}}
+if(!all.days)all.days={};if(!all.weights)all.weights=[];
+let state=all.days[today]||blank();
+function persist(){all.days[today]=state;localStorage.setItem(storeKey,JSON.stringify(all));}
+function render(){
+ const host=document.getElementById('meals');host.innerHTML='';let total=0,done=0;
+ meals.forEach((m,mi)=>{
+  const el=document.createElement('section');el.className='meal';
+  const head=document.createElement('div');head.className='mealhead';
+  const title=document.createElement('strong');title.textContent=m.title;
+  const pill=document.createElement('span');pill.className='pill';pill.textContent=m.kcal+' kcal';
+  head.append(title,pill);el.append(head);
+  const macro=document.createElement('div');macro.className='macroline';macro.textContent=`Protein ${m.p}g · Carbs ${m.c}g · Fiber ${m.f}g`;el.append(macro);
+  m.foods.forEach((food,fi)=>{
+   total++;const id=mi+'-'+fi;const lab=document.createElement('label');lab.className='food';
+   const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!state.checked[id];if(cb.checked)done++;
+   cb.addEventListener('change',()=>{state.checked[id]=cb.checked;persist();render()});
+   const span=document.createElement('span');span.textContent=food;lab.append(cb,span);el.append(lab);
+  });host.append(el);
+ });
+ const pct=Math.round(done/total*100);document.getElementById('bar').style.width=pct+'%';document.getElementById('progressText').textContent=`${pct}% complete · ${done}/${total} food items`;
+ document.getElementById('waterText').textContent=state.water+' / 8';document.getElementById('waterStat').textContent=state.water+' / 8';
+ document.getElementById('workout').checked=state.workout;document.getElementById('workoutStat').textContent=state.workout?'Done':'Not yet';
+ document.getElementById('weight').value=state.weight||'';document.getElementById('notes').value=state.notes||'';
+ renderHistory();
+}
+function renderHistory(){
+ const rows=all.weights.slice(-30).reverse();document.getElementById('history').innerHTML=rows.map(x=>`<tr><td>${x.date}</td><td>${x.weight} kg</td></tr>`).join('');
+ document.getElementById('historySummary').textContent=rows.length?`${rows.length} saved weigh-in(s) · latest: ${rows[0].weight} kg`:'No weight entries saved yet.';
+}
+document.getElementById('plus').onclick=()=>{state.water=Math.min(20,state.water+1);persist();render()};
+document.getElementById('minus').onclick=()=>{state.water=Math.max(0,state.water-1);persist();render()};
+document.getElementById('workout').onchange=e=>{state.workout=e.target.checked;persist();render()};
+document.getElementById('weight').oninput=e=>{state.weight=e.target.value;persist()};
+document.getElementById('saveWeight').onclick=()=>{const w=Number(state.weight);if(!w||w<1){alert('Please enter a valid weight.');return}all.weights=all.weights.filter(x=>x.date!==today);all.weights.push({date:today,weight:w});persist();localStorage.setItem(storeKey,JSON.stringify(all));renderHistory();alert("Today's weight saved.")};
+document.getElementById('notes').oninput=e=>{state.notes=e.target.value;persist()};
+document.getElementById('saveNotes').onclick=()=>{persist();alert('Notes saved.')};
+document.getElementById('reset').onclick=()=>{if(confirm("Reset today's food checklist, water and workout? Weight log will stay.")){state=blank();persist();render()}};
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+render();
+</script></body></html>
